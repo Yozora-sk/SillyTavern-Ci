@@ -10,6 +10,15 @@ fi
 # 进入Ubuntu环境
 ubuntud
 
+# 检查是否已经安装了Git
+if ! dpkg -l git | grep -q 'ii'; then
+  echo "正在安装Git..."
+  apt install -y git
+  echo "Git安装完成！"
+else
+  echo "Git已安装，版本为: $(dpkg -l git | grep 'ii' | awk '{print $3}')"
+fi
+
 # 检查是否已经安装了Node.js
 if ! dpkg -l nodejs | grep -q 'ii'; then
   echo "正在安装Node.js..."
@@ -39,4 +48,4 @@ else
   echo "SillyTavern已安装，版本为: $(cd SillyTavern; npm -v)"
 fi
 
-echo "环境部署完成"
+echo "所有软件安装完成！"
