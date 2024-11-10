@@ -7,20 +7,16 @@ apt-get upgrade -y
 # 安装 git
 apt-get install git -y
 
-# 创建新的文件夹 (替换为你的实际路径)
-mkdir -p /opt/sillytavern
+# 创建目录并进入
+mkdir Aiweb && cd Aiweb
 
-# 切换到新的文件夹
-cd /opt/sillytavern
-
-# 安装 nvm (需要 curl)
+# 安装 nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 
-# 重新加载 shell 配置
 source ~/.bashrc
 
-# 安装 node (使用 nvm 安装指定版本，替换为你的实际版本)
-nvm install 18
+# 安装 node 
+nvm install 20
 
 # 安装 pm2
 npm install -g pm2
@@ -28,11 +24,10 @@ npm install -g pm2
 # 安装 vim
 apt-get install vim -y
 
-# 克隆 SillyTavern (替换为你的实际仓库地址)
+# 克隆 SillyTavern
 git clone https://github.com/SillyTavern/SillyTavern.git .
 
-# 切换到 SillyTavern 目录
-cd SillyTavern
+cd sillytavern
 
 # 安装依赖
 npm install
@@ -81,7 +76,7 @@ if [ -f config.yaml ]; then
   # 保存配置
   pm2 save
 
-  # 获取服务器IP地址 (可能需要根据你的系统调整)
+  # 获取服务器IP地址
   server_ip=$(ip route get 1 | awk '{print $NF;exit}')
 
   echo "SillyTavern 部署完成，使用 pm2 管理进程。"
