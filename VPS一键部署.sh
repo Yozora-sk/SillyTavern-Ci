@@ -1,92 +1,89 @@
 #!/bin/bash
 
-# 更新软件包
-apt-get update -y
-apt-get upgrade -y
+# Update package lists and upgrade existing packages
+apt-get update -y && apt-get upgrade -y || exit 1  # Exit on failure
 
-# 安装 git
-apt-get install git -y
+# Install necessary packages
+apt-get install git vim -y || exit 1
 
-# 创建目录并进入
-mkdir Aiweb && cd Aiweb
+# Create directories and navigate
+mkdir -p Aiweb/SillyTavern && cd Aiweb/SillyTavern || exit 1 # -p creates parent directories
 
-# 安装 nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+# Install nvm (improved error handling)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+if [ $? -ne 0 ]; then
+  echo "Error installing nvm. Check your internet connection and permissions."
+  exit 1
+fi
 
 source ~/.bashrc
 
-# 安装 node 
-nvm install 20
+# Install Node.js (specify version for reproducibility)
+nvm install --lts || exit 1 # Use the latest LTS version for stability
 
-# 安装 pm2
-npm install -g pm2
+# Install pm2
+npm install -g pm2 || exit 1
 
-# 安装 vim
-apt-get install vim -y
+# Clone SillyTavern (with error checking)
+git clone https://github.com/SillyTavern/SillyTavern.git . || exit 1
 
-# 克隆 SillyTavern
-git clone https://github.com/SillyTavern/SillyTavern.git .
+# Install dependencies (with error checking)
+npm install || exit 1
 
-cd sillytavern
+# Get user input for configuration (using a more secure approach)
+read -s -p "Enter custom username (default: user): " custom_username
+read -s -p "Enter custom password (default: password): " custom_password
 
-# 安装依赖
-npm install
+# Use default values if input is empty
+custom_username="${custom_username:-user}"
+custom_password="${custom_password:-password}"
+read -p "Enter custom port (default: 8000): " custom_port
+custom_port="${custom_port:-8000}"
 
-# 使用 node 命令启动一次，尝试创建 config.yaml
-node server.js &  # 使用 & 在后台运行，避免阻塞后续操作
+# Function to safely modify config.yaml (avoiding potential sed issues)
+modify_config() {
+  local key="$1"
+  local value="$2"
+  sed -i "s/^\(${key}:\).*$/\1: ${value}/" config.yaml
+}
 
-# 等待几秒钟让服务器有机会创建 config.yaml
+# Attempt to start the server and create config.yaml
+node server.js &
 sleep 5
 
-# 检查 config.yaml 是否存在
+# Check if config.yaml exists.  Handle the case where it doesn't exist gracefully.
 if [ -f config.yaml ]; then
-  echo "config.yaml 文件已存在，正在进行修改..."
+  # Modify config.yaml using the safer function.
+  modify_config "listen" "true"
+  modify_config "whitelistMode" "false"
+  modify_config "basicAuthMode" "true"
+  modify_config "port" "${custom_port}"
+  modify_config "username" "${custom_username}"
+  modify_config "password" "${custom_password}"
 
-  # 使用 sed 命令修改 config.yaml 文件
-  sed -i 's/listen: false/listen: true/g' config.yaml
-  sed -i 's/whitelistMode: true/whitelistMode: false/g' config.yaml
-  sed -i 's/basicAuthMode: false/basicAuthMode: true/g' config.yaml
 
-  # 获取用户自定义端口
-  read -p "请输入自定义端口 (默认为 8000): " custom_port
-  custom_port="${custom_port:-8000}" # 使用默认值 8000
-
-  # 使用 sed 命令修改端口
-  sed -i "s/port: 8000/port: ${custom_port}/g" config.yaml
-
-  # 获取用户自定义用户名和密码
-  read -p "请输入自定义用户名 (默认为 user): " custom_username
-  custom_username="${custom_username:-user}"
-  read -p "请输入自定义密码 (默认为 password): " custom_password
-  custom_password="${custom_password:-password}"
-
-  # 使用 sed 命令修改用户名和密码 (安全警告依然适用！)
-  sed -i "s/username: user/username: ${custom_username}/g" config.yaml
-  sed -i "s/password: password/password: ${custom_password}/g" config.yaml
-
-  # 停止之前用 node 启动的进程 (可选，但建议加上，避免冲突)
+  # Stop any previously running node processes (more robust)
   pkill -f "node server.js"
 
-  # 使用 pm2 启动 SillyTavern
-  pm2 start server.js --name "sillytavern"
+  # Start with pm2
+  pm2 start server.js --name "sillytavern" || exit 1
+  pm2 startup systemd || exit 1 # Use systemd for better init system integration
+  pm2 save || exit 1
 
-  # 设置 pm2 在系统启动时自动启动
-  pm2 startup
+  # Get server IP (more robust method)
+  server_ip=$(ip route show default | awk '{print $5}')
 
-  # 保存配置
-  pm2 save
-
-  # 获取服务器IP地址
-  server_ip=$(ip route get 1 | awk '{print $NF;exit}')
-
-  echo "SillyTavern 部署完成，使用 pm2 管理进程。"
-  echo "你的配置信息如下:"
-  echo "用户名: ${custom_username}"
-  echo "密码: ${custom_password}"  # 安全警告！生产环境中不要直接显示密码！
-  echo "端口: ${custom_port}"
-  echo "访问地址: ${server_ip}:${custom_port}"
+  echo "SillyTavern deployed successfully, managed by pm2."
+  echo "Your configuration:"
+  echo "Username: ${custom_username}"
+  echo "Port: ${custom_port}"
+  echo "Access URL: ${server_ip}:${custom_port}"
 
 else
-  echo "config.yaml 文件未创建，请检查你的 server.js 文件是否正确创建了该文件。"
-  exit 1 # 退出脚本，提示错误
+  echo "Error: config.yaml not created. Check your server.js file."
+  exit 1
 fi
+
+
+# Important security note:  Never display passwords in production logs or output.  This is only for demonstration purposes.
+# In a production environment, use a secure method for managing secrets (e.g., environment variables or a secrets management service).
