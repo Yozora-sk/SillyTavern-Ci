@@ -1,7 +1,7 @@
 @echo off
 chcp 65001
 
-echo By 晚安
+echo By Night
 
 echo ====================================================
 echo 一键部署 SillyTavern
