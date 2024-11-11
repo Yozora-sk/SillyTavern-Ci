@@ -5,6 +5,8 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'  # 无颜色
+# 更新数据源
+apt update && apt upgrade
 
 # 检查并安装 Node.js 和 Git
 check_node_git() {
