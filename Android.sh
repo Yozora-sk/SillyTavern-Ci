@@ -251,8 +251,7 @@ check_for_updates() {
 }
 
 # 初始化
-update_system
-check_node_gitgroup
+check_node_git
 check_esbuild
 setup_sillytavern
 
@@ -272,8 +271,7 @@ while true; do
   ${GREEN}-------------------------------------${NC}
   ${GREEN}*     SillyTavern 管理菜单        *${NC}
   ${GREEN}-------------------------------------${NC}
-  ${YELLOW}By: Yozora  Bilibili: UID601449119${NC}
-  ${YELLOW}Group:616690026${NC}
+  ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
   ${YELLOW}Tools: alist.nightan.xyz          ${NC}
   ${YELLOW}黑屏/加载慢请检查后台活跃权限    ${NC}
   ${GREEN}-------------------------------------${NC}
@@ -287,7 +285,7 @@ while true; do
   ${YELLOW}2. 备份用户数据${NC}
   ${YELLOW}3. 恢复用户数据${NC}
   ${YELLOW}4. 删除备份文件${NC}
-  ${YELLOW}5. 日志错误解释(暂无效)${NC}
+  ${YELLOW}5. 查看日志${NC}
   ${YELLOW}6. 退出${NC}
   ${GREEN}-------------------------------------${NC}
   "
