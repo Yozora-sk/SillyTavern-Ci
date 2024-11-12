@@ -69,7 +69,7 @@ if [ -f config.yaml ]; then
   pm2 startup systemd || exit 1 # 使用systemd，系统重启后自动启动
   pm2 save || exit 1
 
-  # 获取服务器IP (更健壮的方法)
+  # 获取服务器IP
   server_ip=$(ip route show default | awk '{print $5}')
 
   echo "SillyTavern部署成功，由pm2管理进程。"
