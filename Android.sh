@@ -251,6 +251,7 @@ check_for_updates() {
 }
 
 # 初始化
+update_system
 check_node_git
 check_esbuild
 setup_sillytavern
