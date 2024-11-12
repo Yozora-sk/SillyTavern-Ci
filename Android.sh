@@ -251,6 +251,7 @@ check_for_updates() {
 }
 
 # 初始化
+update_system
 check_node_git
 check_esbuild
 setup_sillytavern
@@ -271,7 +272,7 @@ while true; do
   ${GREEN}-------------------------------------${NC}
   ${GREEN}*     SillyTavern 管理菜单        *${NC}
   ${GREEN}-------------------------------------${NC}
-  ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
+  ${YELLOW}By: Yozora  Bilibili: UID601449119${NC}
   ${YELLOW}Tools: alist.nightan.xyz          ${NC}
   ${YELLOW}黑屏/加载慢请检查后台活跃权限    ${NC}
   ${GREEN}-------------------------------------${NC}
