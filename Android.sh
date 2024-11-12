@@ -273,6 +273,7 @@ while true; do
   ${GREEN}*     SillyTavern 管理菜单        *${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
+  ${YELLOW}Group:616690026${NC}
   ${YELLOW}Tools: alist.nightan.xyz          ${NC}
   ${YELLOW}黑屏/加载慢请检查后台活跃权限    ${NC}
   ${GREEN}-------------------------------------${NC}
