@@ -4,9 +4,35 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-NC='\033[0m'  # 无颜色
+NC='\033[0m'
+
+# 默认安装路径
+INSTALL_PATH="$HOME/SillyTavern"
+
+SYSTEM_UPDATE_FLAG="$HOME/.termux/system_update.flag"
+REPO_CLONE_FLAG="$INSTALL_PATH/clone_complete.flag"
+
+# 日志注释信息
+LOG_COMMENT="\
+如报错，请查看以下日志信息，阅读错误处理。
+SillyTavern 程序 90% 的错误来源于网络环境，请检查网络连接。"
+
+# 日志文件路径
+LOG_FILE="$INSTALL_PATH/sillytavern.log"
+
+
 # 更新数据源
-apt update && apt upgrade
+update_system() {
+    if [ ! -f "$SYSTEM_UPDATE_FLAG" ] || [ ! -f "$REPO_CLONE_FLAG" ]; then
+        echo -e "${YELLOW}开始更新系统...${NC}"
+        apt update && apt upgrade -y && touch "$SYSTEM_UPDATE_FLAG" || {
+            echo -e "${RED}系统更新失败，请手动更新。${NC}"
+            exit 1
+        }
+    else
+        echo -e "${GREEN}系统已经在过去更新过，无需再更新。${NC}"
+    fi
+}
 
 # 检查并安装 Node.js 和 Git
 check_node_git() {
@@ -21,12 +47,12 @@ check_node_git() {
   fi
 
   if command -v git &> /dev/null; then
-    git_version=$(git --version)
+    git_version=$(git --version | cut -d ' ' -f 3)
     echo -e "${GREEN}已找到 Git: $git_version${NC}"
   else
     echo -e "${YELLOW}未找到 Git，正在尝试安装...${NC}"
     apt install -y git || { echo -e "${RED}Git 安装失败${NC}"; exit 1; }
-    git_version=$(git --version)
+    git_version=$(git --version | cut -d ' ' -f 3)
     echo -e "${GREEN}Git 安装成功: $git_version${NC}"
   fi
 }
@@ -42,14 +68,15 @@ check_esbuild() {
 
 # 克隆仓库并安装依赖
 setup_sillytavern() {
-  if [ ! -d "SillyTavern" ]; then
+  if [ ! -d "$INSTALL_PATH" ]; then
     echo -e "${YELLOW}SillyTavern 目录不存在，正在克隆仓库并安装依赖...${NC}"
-    git clone https://github.com/SillyTavern/SillyTavern.git || { echo -e "${RED}克隆仓库失败${NC}"; exit 1; }
-    cd SillyTavern || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
+    git clone https://github.com/SillyTavern/SillyTavern.git "$INSTALL_PATH" || { echo -e "${RED}克隆仓库失败${NC}"; exit 1; }
+    cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
     npm install || { echo -e "${RED}安装 Node.js 依赖失败${NC}"; exit 1; }
     echo -e "${GREEN}SillyTavern 初始化完成！${NC}"
   else
-    cd SillyTavern
+    touch "$REPO_CLONE_FLAG"
+    cd "$INSTALL_PATH"
   fi
 }
 
@@ -61,23 +88,36 @@ get_sillytavern_version() {
   echo "$latest_version"
 }
 
+
 # 启动 SillyTavern
 start_sillytavern() {
   echo "启动 SillyTavern..."
+  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
+
+  # 删除之前的日志文件
+  if [ -f "$LOG_FILE" ]; then
+    rm "$LOG_FILE" || echo -e "${YELLOW}删除之前的日志文件 $LOG_FILE 失败，可能文件已被占用或权限不足。${NC}"
+  fi
+
+  exec > >(tee -a "$LOG_FILE") 2>&1 # Redirect stdout and stderr to log file
   ./start.sh || { echo -e "${RED}启动 SillyTavern 失败${NC}"; exit 1; }
   echo -e "${GREEN}SillyTavern 启动成功!${NC}"
 }
 
 # 更新 SillyTavern
 update_sillytavern() {
+  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
+
   if [[ "$current_version" == "$latest_version" ]]; then
     echo -e "${YELLOW}SillyTavern 已经是最新版本 ($current_version)。${NC}"
     return 0
   fi
   echo "更新 SillyTavern..."
-  git pull https://github.com/SillyTavern/SillyTavern || { echo -e "${RED}更新 SillyTavern 失败${NC}"; exit 1; }
+  git pull || { echo -e "${RED}更新 SillyTavern 失败${NC}"; exit 1; }
   echo -e "${GREEN}SillyTavern 更新成功!${NC}"
+  read -p "更新已完成。按 Enter 键继续..." -r
 }
+
 
 # 备份用户数据
 backup_user_data() {
@@ -186,45 +226,78 @@ delete_backup_files() {
   read -p "按 Enter 键继续..." -r
 }
 
+
+# 查看日志
+view_logs() {
+  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
+  if [ -f "$LOG_FILE" ]; then
+    echo -e "${YELLOW}${LOG_COMMENT}${NC}"
+    less "$LOG_FILE"
+  else
+    echo -e "${RED}未找到日志文件 $LOG_FILE${NC}"
+  fi
+}
+
+check_for_updates() {
+  current_version=$(get_sillytavern_version | head -n 1)
+  latest_version=$(get_sillytavern_version | tail -n 1)
+
+  if [[ "$current_version" != "$latest_version" ]]; then
+    echo -e "${YELLOW}发现新的 SillyTavern 版本 ($latest_version)，正在更新...${NC}"
+    update_sillytavern
+  else
+    echo -e "${GREEN}SillyTavern 已经是最新版本 ($current_version)。${NC}"
+  fi
+}
+
 # 初始化
 check_node_git
 check_esbuild
 setup_sillytavern
 
-# 获取版本信息
+# 首次启动时检查更新
 current_version=$(get_sillytavern_version | head -n 1)
 latest_version=$(get_sillytavern_version | tail -n 1)
+check_for_updates
 
 # Ctrl+C 信号处理
 trap '' INT
 
+
 # 用户菜单
 while true; do
   clear
-  echo -e "${GREEN}SillyTavern 管理菜单${NC}"
-  echo -e "${RED}By Night${NC}"
-  echo -e "${YELLOW}My Bilibili:601449119${NC}"
-  echo -e "${YELLOW}Tools:alist.nightan.xyz${NC}"
-  echo -e "${YELLOW}如果出现黑屏or长时间无法加载，请检查Termux的后台活跃权限${NC}"
-  echo -e "${GREEN}Node.js 版本: $node_version${NC}"
-  echo -e "${GREEN}Git 版本: $git_version${NC}"
-  echo "当前 SillyTavern 版本: $current_version"
-  echo "最新 SillyTavern 版本: $latest_version"
-  echo "1. 启动 SillyTavern"
-  echo "2. 更新 SillyTavern"
-  echo "3. 备份用户数据"
-  echo "4. 恢复用户数据"
-  echo "5. 删除备份文件"
-  echo "6. 退出"
+  echo -e "
+  ${GREEN}-------------------------------------${NC}
+  ${GREEN}*     SillyTavern 管理菜单        *${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
+  ${YELLOW}Tools: alist.nightan.xyz          ${NC}
+  ${YELLOW}黑屏/加载慢请检查后台活跃权限    ${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${GREEN}本地安装路径: $INSTALL_PATH${NC}
+  ${GREEN}SillyTavern本地版本: $current_version${NC}
+  ${GREEN}SillyTavern最新版本: $latest_version${NC}
+  ${GREEN}Node.js版本信息: $node_version${NC}
+  ${GREEN}Git版本信息: $git_version${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${YELLOW}1. 启动 SillyTavern${NC}
+  ${YELLOW}2. 备份用户数据${NC}
+  ${YELLOW}3. 恢复用户数据${NC}
+  ${YELLOW}4. 删除备份文件${NC}
+  ${YELLOW}5. 查看日志${NC}
+  ${YELLOW}6. 退出${NC}
+  ${GREEN}-------------------------------------${NC}
+  "
 
   read -p "请输入你的选择: " choice
 
   case $choice in
     1) start_sillytavern ;;
-    2) update_sillytavern ;;
-    3) backup_user_data ;;
-    4) restore_user_data ;;
-    5) delete_backup_files ;;
+    2) backup_user_data ;;
+    3) restore_user_data ;;
+    4) delete_backup_files ;;
+    5) view_logs ;;
     6) exit 0 ;;
     *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
   esac
