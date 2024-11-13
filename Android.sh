@@ -368,7 +368,7 @@ while true; do
   ${YELLOW}2. 备份用户数据${NC}
   ${YELLOW}3. 恢复用户数据${NC}
   ${YELLOW}4. 删除备份文件${NC}
-  ${YELLOW}5. 查看日志${NC}
+  ${YELLOW}5. 日志错误解析${NC}
   ${YELLOW}6. 角色卡URL导入${NC}
   ${YELLOW}7. 退出${NC}
   ${GREEN}-------------------------------------${NC}
