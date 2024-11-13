@@ -3,13 +3,14 @@
 # 颜色代码
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# SillyTavern 安装路径 (根据实际情况修改)
+# SillyTavern 安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
 # 备份/恢复数据目录
-DATA_DIR="SillyTavern/data"
+DATA_DIR="$INSTALL_PATH/data"
 
 # 备份文件名前缀
 BACKUP_PREFIX="SillyTavern_data_backup_"
@@ -24,7 +25,8 @@ backup_data() {
   backup_filename="$BACKUP_PREFIX$timestamp.tar.gz"
   backup_path="$BACKUP_DIR/$backup_filename"
 
-  if tar -czvf "$backup_path" "$DATA_DIR"; then
+  # 只打包 data 目录的内容
+  if tar -czvf "$backup_path" -C "$INSTALL_PATH" data; then
     echo -e "${GREEN}用户数据已备份到: $backup_path${NC}"
   else
     echo -e "${RED}创建备份失败: ${?}${NC}"
@@ -44,7 +46,9 @@ restore_data() {
   echo -e "${YELLOW}找到以下备份文件：${NC}"
   select backup_file in $backup_files; do
     if [[ -n "$backup_file" ]]; then
-      if tar -xzvf "$backup_file" -C "$INSTALL_PATH"; then
+      #  删除现有的 data 目录，解压备份
+      rm -rf "$DATA_DIR"
+      if tar -xzvf "$backup_file" -C "$INSTALL_PATH" data; then  # 只解压 data 目录
         echo -e "${GREEN}数据已从 $backup_file 恢复。${NC}"
       else
         echo -e "${RED}恢复数据失败: ${?}${NC}"
@@ -56,6 +60,7 @@ restore_data() {
     fi
   done
 }
+
 
 # 主菜单
 while true; do
