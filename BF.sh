@@ -9,7 +9,7 @@ NC='\033[0m'
 INSTALL_PATH="$HOME/SillyTavern"
 
 # 备份/恢复数据目录
-DATA_DIR="$INSTALL_PATH/data"
+DATA_DIR="SillyTavern/data"
 
 # 备份文件名前缀
 BACKUP_PREFIX="SillyTavern_data_backup_"
