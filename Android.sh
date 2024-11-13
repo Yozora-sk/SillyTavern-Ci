@@ -351,7 +351,7 @@ while true; do
   clear
   echo -e "
   ${GREEN}-------------------------------------${NC}
-  ${GREEN}*     SillyTavern 管理菜单        *${NC}
+  ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
   ${YELLOW}Group:616690026${NC}
