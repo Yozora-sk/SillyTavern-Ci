@@ -250,6 +250,84 @@ check_for_updates() {
   fi
 }
 
+# SillyTavern快捷配置 子菜单
+sillytavern_quick_config_menu() {
+  while true; do
+    clear
+    echo -e "
+    ${GREEN}-------------------------------------${NC}
+    ${GREEN}*     SillyTavern 快捷配置菜单     *${NC}
+    ${GREEN}-------------------------------------${NC}
+    ${YELLOW}1. URL导入角色卡${NC}
+    ${YELLOW}2. 返回上一级菜单${NC}
+    ${GREEN}-------------------------------------${NC}
+    "
+
+    read -p "请输入你的选择: " choice
+
+    case $choice in
+      1)
+        # 获取当前脚本所在的目录
+        current_dir=$(dirname "$(readlink -f "$0")")
+
+        # 提示用户输入图片 URL
+        read -p "请输入角色卡图片的 URL: " image_url
+
+        # 获取文件名，如果 URL 中包含查询参数，则去除参数
+        filename=$(basename "$image_url" | cut -d'?' -f1)
+
+        # 使用 curl 下载图片到当前目录
+        if curl -s -L "$image_url" -o "$current_dir/$filename"; then
+          echo "图片下载成功: $current_dir/$filename"
+        else
+          echo "图片下载失败，请检查 URL 或网络连接."
+          exit 1
+        fi
+
+
+        # 更改文件权限、用户组和所有者
+        if chown u0_a351:u0_a351 "$current_dir/$filename" && chmod 600 "$current_dir/$filename"; then
+          echo "权限设置成功."
+        else
+          echo "权限设置失败."
+          exit 1
+        fi
+
+        # SillyTavern 数据目录 (你需要根据你的实际情况修改这个路径, 保留 ~ 符号)
+        sillytavern_data_dir="$INSTALL_PATH/data/default-user"
+
+        # 角色缩略图目录
+        thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
+
+        # 角色目录
+        character_dir="$sillytavern_data_dir/characters"
+
+
+        # 复制图片到缩略图目录
+        if cp "$current_dir/$filename" "$thumbnail_dir"; then
+          echo "图片已导入到缩略图目录: $thumbnail_dir/$filename"
+        else
+          echo "导入图片到缩略图目录失败，请检查目录路径和权限."
+          exit 1
+        fi
+
+        # 复制图片到角色目录
+        if cp "$current_dir/$filename" "$character_dir"; then
+          echo "图片已导入到角色目录: $character_dir/$filename"
+        else
+          echo "导入图片到角色目录失败，请检查目录路径和权限."
+          exit 1
+        fi
+
+        echo "导入完成."
+        read -p "按 Enter 键继续..." -r
+        ;;
+      2) break ;;
+      *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
+    esac
+  done
+}
+
 # 初始化
 update_system
 check_node_git
@@ -288,7 +366,8 @@ while true; do
   ${YELLOW}3. 恢复用户数据${NC}
   ${YELLOW}4. 删除备份文件${NC}
   ${YELLOW}5. 查看日志${NC}
-  ${YELLOW}6. 退出${NC}
+  ${YELLOW}6. 角色卡URL导入${NC}
+  ${YELLOW}7. 退出${NC}
   ${GREEN}-------------------------------------${NC}
   "
 
@@ -300,7 +379,8 @@ while true; do
     3) restore_user_data ;;
     4) delete_backup_files ;;
     5) view_logs ;;
-    6) exit 0 ;;
+    6) sillytavern_quick_config_menu ;;
+    7) exit 0 ;;
     *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
   esac
 done
