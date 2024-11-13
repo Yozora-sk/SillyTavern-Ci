@@ -268,58 +268,61 @@ sillytavern_quick_config_menu() {
     case $choice in
       1)
         # 获取当前脚本所在的目录
-        current_dir=$(dirname "$(readlink -f "$0")")
+current_dir=$(dirname "$(readlink -f "$0")")
 
-        # 提示用户输入图片 URL
-        read -p "请输入角色卡图片的 URL: " image_url
+cd ~
 
-        # 获取文件名，如果 URL 中包含查询参数，则去除参数
-        filename=$(basename "$image_url" | cut -d'?' -f1)
+# 提示用户输入图片 URL
+    read -p "请输入角色卡图片的 URL: " image_url
 
-        # 使用 curl 下载图片到当前目录
-        if curl -s -L "$image_url" -o "$current_dir/$filename"; then
-          echo "图片下载成功: $current_dir/$filename"
-        else
-          echo "图片下载失败，请检查 URL 或网络连接."
-          exit 1
-        fi
+# 获取文件名，如果 URL 中包含查询参数，则去除参数
+    filename=$(basename "$image_url" | cut -d'?' -f1)  # 去除查询参数
 
 
-        # 更改文件权限、用户组和所有者
-        if chown u0_a351:u0_a351 "$current_dir/$filename" && chmod 600 "$current_dir/$filename"; then
-          echo "权限设置成功."
-        else
-          echo "权限设置失败."
-          exit 1
-        fi
-
-        # SillyTavern 数据目录 (你需要根据你的实际情况修改这个路径, 保留 ~ 符号)
-        sillytavern_data_dir="$INSTALL_PATH/data/default-user"
-
-        # 角色缩略图目录
-        thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
-
-        # 角色目录
-        character_dir="$sillytavern_data_dir/characters"
+# 使用 curl 下载图片到当前目录
+if curl -s -L "$image_url" -o "$current_dir/$filename"; then
+    echo "图片下载成功: $current_dir/$filename"
+else
+    echo "图片下载失败，请检查 URL 或网络连接."
+    exit 1
+fi
 
 
-        # 复制图片到缩略图目录
-        if cp "$current_dir/$filename" "$thumbnail_dir"; then
-          echo "图片已导入到缩略图目录: $thumbnail_dir/$filename"
-        else
-          echo "导入图片到缩略图目录失败，请检查目录路径和权限."
-          exit 1
-        fi
+# 更改文件权限、用户组和所有者
+if chown u0_a351:u0_a351 "$current_dir/$filename" && chmod 600 "$current_dir/$filename"; then
+    echo "权限设置成功."
+else
+    echo "权限设置失败."
+    exit 1
+fi
 
-        # 复制图片到角色目录
-        if cp "$current_dir/$filename" "$character_dir"; then
-          echo "图片已导入到角色目录: $character_dir/$filename"
-        else
-          echo "导入图片到角色目录失败，请检查目录路径和权限."
-          exit 1
-        fi
+# SillyTavern 数据目录 (你需要根据你的实际情况修改这个路径, 保留 ~ 符号)
+sillytavern_data_dir="SillyTavern/data/default-user"
 
-        echo "导入完成."
+# 角色缩略图目录
+thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
+
+# 角色目录
+character_dir="$sillytavern_data_dir/characters"
+
+
+# 复制图片到缩略图目录
+if cp "$current_dir/$filename" "$thumbnail_dir"; then
+    echo "图片已复制到缩略图目录: $thumbnail_dir/$filename"
+else
+    echo "复制图片到缩略图目录失败，请检查目录路径和权限."
+    exit 1
+fi
+
+# 复制图片到角色目录
+if cp "$current_dir/$filename" "$character_dir"; then
+    echo "图片已复制到角色目录: $character_dir/$filename"
+else
+    echo "复制图片到角色目录失败，请检查目录路径和权限."
+    exit 1
+fi
+
+echo "导入完成."
         read -p "按 Enter 键继续..." -r
         ;;
       2) break ;;
