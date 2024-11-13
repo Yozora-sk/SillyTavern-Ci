@@ -20,7 +20,7 @@ fi
 source ~/.bashrc
 
 # 安装Node.js
-nvm install --lts || exit 1 # 使用最新的LTS版本，更稳定
+nvm install --lts || exit 1 
 
 # 安装pm2
 npm install -g pm2 || exit 1
@@ -43,7 +43,7 @@ custom_password="${custom_password:-password}"
 read -p "请输入自定义端口 (默认: 8000): " custom_port
 custom_port="${custom_port:-8000}"
 
-# 安全修改config.yaml的函数
+# 修改config.yaml的函数
 modify_config() {
   local key="$1"
   local value="$2"
