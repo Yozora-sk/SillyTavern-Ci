@@ -289,7 +289,7 @@ fi
 
 
 # 更改文件权限、用户组和所有者
-if chown u0_a351:u0_a351 "$current_dir/$filename" && chmod 600 "$current_dir/$filename"; then
+if chmod 777 "$current_dir/$filename"; then
     echo "权限设置成功."
 else
     echo "权限设置失败."
