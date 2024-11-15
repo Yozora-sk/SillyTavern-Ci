@@ -354,9 +354,9 @@ while true; do
   ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
-  ${YELLOW}Group:616690026${NC}
-  ${YELLOW}Tools: alist.nightan.xyz          ${NC}
-  ${YELLOW}黑屏/加载慢请检查后台活跃权限    ${NC}
+  ${YELLOW}鉴于大陆内的网络环境和资源分享限制，你可以加入我的TG频道${NC}
+  ${YELLOW}频道地址:https://t.me/Yozorask1${NC}
+  ${YELLOW}该频道将长期分享公益接口、订阅、并提供SillyTavern的报错解决方案${NC}
   ${GREEN}-------------------------------------${NC}
   ${GREEN}本地安装路径: $INSTALL_PATH${NC}
   ${GREEN}SillyTavern本地版本: $current_version${NC}
