@@ -25,7 +25,7 @@ LOG_FILE="$INSTALL_PATH/sillytavern.log"
 update_system() {
     if [ ! -f "$SYSTEM_UPDATE_FLAG" ] || [ ! -f "$REPO_CLONE_FLAG" ]; then
         echo -e "${YELLOW}开始更新系统...${NC}"
-        apt update && apt upgrade -y && || {
+        apt update && apt upgrade -y || {
             echo -e "${RED}系统更新失败，请手动更新。${NC}"
             exit 1
         }
