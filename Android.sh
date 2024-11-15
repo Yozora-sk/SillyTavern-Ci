@@ -23,15 +23,8 @@ LOG_FILE="$INSTALL_PATH/sillytavern.log"
 
 # 更新数据源
 update_system() {
-    if [ ! -f "$SYSTEM_UPDATE_FLAG" ] || [ ! -f "$REPO_CLONE_FLAG" ]; then
-        echo -e "${YELLOW}开始更新系统...${NC}"
-        apt update && apt upgrade -y || {
-            echo -e "${RED}系统更新失败，请手动更新。${NC}"
-            exit 1
-        }
-    else
-        echo -e "${GREEN}系统已经在过去更新过，无需再更新。${NC}"
-    fi
+
+    apt update && apt upgrade -y
 }
 
 # 检查并安装 Node.js 和 Git
