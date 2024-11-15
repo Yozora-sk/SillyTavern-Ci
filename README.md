@@ -1,1 +1,3 @@
 SillyTavern一键部署
+
+VPS需要使用命令转换，并且手动vim编辑配置文件
