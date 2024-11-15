@@ -356,7 +356,7 @@ while true; do
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
   ${YELLOW}鉴于大陆内的网络环境和资源分享限制，故而售后交流群建立在TG${NC}
   ${YELLOW}频道地址:https://t.me/Yozorask1${NC}
-  ${YELLOW}该频道将长期分享公益接口、订阅、并提供SillyTavern的报错解决方案${NC}
+  ${YELLOW}该频道将长期分享公益AI接口、免费魔法，并提供SillyTavern的报错解决方案${NC}
   ${GREEN}-------------------------------------${NC}
   ${GREEN}本地安装路径: $INSTALL_PATH${NC}
   ${GREEN}SillyTavern本地版本: $current_version${NC}
