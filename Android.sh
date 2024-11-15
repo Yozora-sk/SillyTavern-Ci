@@ -354,7 +354,7 @@ while true; do
   ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
-  ${YELLOW}鉴于大陆内的网络环境和资源分享限制，你可以加入我的TG频道${NC}
+  ${YELLOW}鉴于大陆内的网络环境和资源分享限制，故而售后交流群建立在TG${NC}
   ${YELLOW}频道地址:https://t.me/Yozorask1${NC}
   ${YELLOW}该频道将长期分享公益接口、订阅、并提供SillyTavern的报错解决方案${NC}
   ${GREEN}-------------------------------------${NC}
