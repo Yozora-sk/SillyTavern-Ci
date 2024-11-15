@@ -1,7 +1,7 @@
 @echo off
 chcp 65001
 
-echo By Night
+echo By Yozora  TG:https://t.me/Yozorask1
 
 echo ====================================================
 echo 一键部署 SillyTavern
