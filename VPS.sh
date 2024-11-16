@@ -16,20 +16,20 @@ mkdir -p Aiweb/SillyTavern && echo "${GREEN}目录创建完成${NC}" || { echo "
 
 cd Aiweb/SillyTavern || { echo "${RED}目录切换失败${NC}"; exit 1; }
 
-# 安装nvm (使用更稳定的安装方式)
+# 安装nvm
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.bashrc
 
-# 安装Node.js (指定版本, 例如v18)
+# 安装Node.js
+source ~/.bashrc
 nvm install v20 && echo "${GREEN}Node.js 安装完成${NC}" || { echo "${RED}Node.js 安装失败${NC}"; exit 1; }
 
 # 安装pm2
 npm install -g pm2 && echo "${GREEN}pm2 安装完成${NC}" || { echo "${RED}pm2 安装失败${NC}"; exit 1; }
 
-# 克隆SillyTavern (确保目录为空)
+# 克隆SillyTavern
 git clone https://github.com/SillyTavern/SillyTavern.git . && echo "${GREEN}SillyTavern 克隆完成${NC}" || { echo "${RED}SillyTavern 克隆失败${NC}"; exit 1; }
 
 
@@ -39,7 +39,7 @@ npm install && echo "${GREEN}依赖安装完成${NC}" || { echo "${RED}依赖安
 # 获取用户输入配置
 read -p "请输入自定义用户名 (默认: user): " custom_username
 read -sp "请输入自定义密码 (默认: password): " custom_password
-echo "" # 换行，避免密码直接连接到下一行提示
+echo "" 
 read -p "请输入自定义端口 (默认: 8000): " custom_port
 
 
