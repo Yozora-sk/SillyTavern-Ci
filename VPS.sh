@@ -52,7 +52,7 @@ custom_port="${custom_port:-8000}"
 modify_config() {
   local key="$1"
   local value="$2"
-  sed -i -E "s/^\(${key}:\s*).*/\1${value}/" config.yaml
+  sed -i -E "s/^\(${key}:\s+).*/\1${value}/" config.yaml
 }
 
 # 启动服务器并等待config.yaml创建
