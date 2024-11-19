@@ -9,117 +9,137 @@ NC='\033[0m'
 # 默认安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
+# 日志文件路径
+LOG_FILE="$INSTALL_PATH/sillytavern.log"
+
 # 日志注释信息
 LOG_COMMENT="\
 如报错，请查看以下日志信息，阅读错误处理。
 SillyTavern 程序 90% 的错误来源于网络环境，请检查网络连接。"
 
-# 日志文件路径
-LOG_FILE="$INSTALL_PATH/sillytavern.log"
+# --- 函数定义 ---
+
+# 打印错误信息但不退出
+error_message() {
+  echo -e "${RED}$1${NC}"
+  sleep 3
+}
+
+# 打印警告信息
+warn() {
+  echo -e "${YELLOW}$1${NC}"
+}
+
+# 打印成功信息
+success() {
+  echo -e "${GREEN}$1${NC}"
+}
 
 # 获取 SillyTavern 版本
 get_sillytavern_version() {
-  local current_version=$(grep version package.json | cut -d '"' -f 4) || current_version="未知版本"
-  local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' || echo "未知版本")
+  local current_version=$(grep version package.json | cut -d '"' -f 4 2>/dev/null || echo "未知版本")
+  local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' 2>/dev/null || echo "未知版本")
   echo "$current_version"
   echo "$latest_version"
 }
 
 # 启动 SillyTavern
 start_sillytavern() {
-  echo "启动 SillyTavern..."
-  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
+  success "启动 SillyTavern..."
+  cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
 
   if [ -f "$LOG_FILE" ]; then
-    rm "$LOG_FILE" || echo -e "${YELLOW}删除之前的日志文件 $LOG_FILE 失败，可能文件已被占用或权限不足。${NC}"
+    rm "$LOG_FILE" || warn "删除之前的日志文件 $LOG_FILE 失败，可能文件已被占用或权限不足。"
   fi
 
-  exec > >(tee -a "$LOG_FILE") 2>&1 # Redirect stdout and stderr to log file
-  ./start.sh || { echo -e "${RED}启动 SillyTavern 失败${NC}"; exit 1; }
-  echo -e "${GREEN}SillyTavern 启动成功!${NC}"
+  exec > >(tee -a "$LOG_FILE") 2>&1
+  if ! ./start.sh; then
+    error_message "启动 SillyTavern 失败: $?"
+    return 1
+  fi
+  success "SillyTavern 启动成功!"
 }
 
 # 备份用户数据
 backup_user_data() {
-  parent_dir=$(dirname "$(pwd)")
-  timestamp=$(date +%Y%m%d_%H%M%S)
-  backup_filename="SillyTavern_data_backup_$timestamp.tar.gz"
-  backup_path="$parent_dir/$backup_filename"
+  cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
+  local parent_dir=$(dirname "$(pwd)")
+  local timestamp=$(date +%Y%m%d_%H%M%S)
+  local backup_filename="SillyTavern_data_backup_$timestamp.tar.gz"
+  local backup_path="$parent_dir/$backup_filename"
 
-  tar -czvf "$backup_path" data || { echo -e "${RED}创建备份失败: ${?}${NC}"; exit 1; }
-  echo -e "${GREEN}用户数据已备份到: $backup_path${NC}"
+  if ! tar -czvf "$backup_path" data; then
+    error_message "创建备份失败: $?"
+    return 1
+  fi
+  success "用户数据已备份到: $backup_path"
   read -p "备份完成。按 Enter 键继续..." -r
 }
 
 # 数据恢复功能
 restore_user_data() {
-  parent_dir=$(dirname "$(pwd)")
-  backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
+  local parent_dir=$(dirname "$(pwd)")
+  local backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
 
   if [ -z "$backup_files" ]; then
-    echo -e "${RED}未找到备份文件。${NC}"
+    error_message "未找到备份文件。"
     return 1
   fi
 
-  echo -e "${YELLOW}找到以下备份文件：${NC}"
-  i=1
-  for file in $backup_files; do
-    echo "$i. $file"
-    i=$((i+1))
+  warn "找到以下备份文件："
+  select file in $backup_files; do
+    if [ -n "$file" ]; then
+      break
+    fi
   done
 
-  read -p "请输入要恢复的备份文件的序号 (输入 0 取消恢复): " choice
-
-  if [[ "$choice" == "0" ]]; then
-    return 0
+  if [ -z "$file" ]; then
+    return 0  # 用户取消选择
   fi
 
-  if [[ ! "$choice" =~ ^[0-9]+$ ]] || [[ "$choice" -gt "$i" ]] || [[ "$choice" -lt "1" ]]; then
-    echo -e "${RED}无效的序号，请重试。${NC}"
+  local temp_dir=$(mktemp -d) || { error_message "创建临时目录失败"; return 1; }
+
+  if ! tar -xzvf "$file" -C "$temp_dir"; then
+    error_message "解压备份文件失败"
+    rm -rf "$temp_dir"
     return 1
   fi
 
-  selected_file=$(echo "$backup_files" | awk -v choice="$choice" 'NR==choice{print $0}')
-
-  if [ ! -f "$selected_file" ]; then
-      echo -e "${RED}备份文件不存在，请重试。${NC}"
-      return 1
-  fi
-
-  temp_dir=$(mktemp -d) || { echo -e "${RED}创建临时目录失败${NC}"; return 1; }
-
-  # 解压备份文件到临时目录
-  tar -xzvf "$selected_file" -C "$temp_dir" || { echo -e "${RED}解压备份文件失败${NC}"; rm -rf "$temp_dir"; return 1; }
-
-  # 检查解压后的data目录
-  data_dir="$temp_dir/data"
+  local data_dir="$temp_dir/data"
   if [ ! -d "$data_dir" ]; then
-      echo -e "${RED}备份文件不包含data目录${NC}"
-      rm -rf "$temp_dir"
-      return 1
+    error_message "备份文件不包含data目录"
+    rm -rf "$temp_dir"
+    return 1
   fi
 
-  # 替换原data目录
-  rm -rf data || { echo -e "${RED}删除原data目录失败${NC}"; rm -rf "$temp_dir"; return 1; }
-  mv "$data_dir" data || { echo -e "${RED}移动data目录失败${NC}"; rm -rf "$temp_dir"; return 1; }
+  if ! rm -rf data; then
+    error_message "删除原data目录失败"
+    rm -rf "$temp_dir"
+    return 1
+  fi
+  if ! mv "$data_dir" data; then
+    error_message "移动data目录失败"
+    rm -rf "$temp_dir"
+    return 1
+  fi
   rm -rf "$temp_dir"
 
-  echo -e "${GREEN}数据恢复成功！${NC}"
+  success "数据恢复成功！"
   read -p "数据恢复完成。按 Enter 键继续..." -r
 }
 
 # 备份文件删除功能
 delete_backup_files() {
-  parent_dir=$(dirname "$(pwd)")
-  backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
+  local parent_dir=$(dirname "$(pwd)")
+  local backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
 
   if [ -z "$backup_files" ]; then
-    echo -e "${RED}未找到备份文件。${NC}"
-    return 0
+    error_message "未找到备份文件。"
+    return 1
   fi
 
   echo -e "${YELLOW}找到以下备份文件：${NC}"
-  i=1
+  local i=1
   declare -A backup_file_map
   for file in $backup_files; do
     echo "$i. $file"
@@ -135,23 +155,27 @@ delete_backup_files() {
 
   for num in $choice; do
     if [[ ! "$num" =~ ^[0-9]+$ ]] || [[ "$num" -gt "$i" ]] || [[ "$num" -lt "1" ]]; then
-      echo -e "${RED}无效的序号 $num，请重试。${NC}"
+      error_message "无效的序号 $num，请重试。"
       return 1
     fi
-    rm "${backup_file_map[$num]}" || echo -e "${RED}删除备份文件 ${backup_file_map[$num]} 失败!${NC}"
+    if ! rm "${backup_file_map[$num]}"; then
+      error_message "删除备份文件 ${backup_file_map[$num]} 失败!"
+      return 1
+    fi
   done
-  echo -e "${GREEN}备份文件删除成功!${NC}"
+  success "备份文件删除成功!"
   read -p "按 Enter 键继续..." -r
 }
 
 # 查看日志
 view_logs() {
-  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
+  cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
   if [ -f "$LOG_FILE" ]; then
-    echo -e "${YELLOW}${LOG_COMMENT}${NC}"
+    warn "$LOG_COMMENT"
     less "$LOG_FILE"
   else
-    echo -e "${RED}未找到日志文件 $LOG_FILE${NC}"
+    error_message "未找到日志文件 $LOG_FILE"
+    return 1
   fi
 }
 
@@ -172,105 +196,92 @@ sillytavern_quick_config_menu() {
 
     case $choice in
       1)
-        # 获取sillytavern-manager.sh所在的目录
-        current_dir=$(dirname "$(readlink -f "$0")")
+        local current_dir=$(dirname "$(readlink -f "$0")")
+        cd ~ || { error_message "切换到用户目录失败"; return 1; }
 
-        cd ~
-
-        # 输入图片 URL
         read -p "请输入角色卡图片的 URL: " image_url
+        local filename=$(basename "$image_url" | cut -d'?' -f1)
 
-        filename=$(basename "$image_url" | cut -d'?' -f1)  
-
-        if curl -s -L "$image_url" -o "$current_dir/$filename"; then
-            echo "图片下载成功: $current_dir/$filename"
-        else
-            echo "图片下载失败，请检查 URL 或网络连接."
-            exit 1
+        if ! curl -s -L "$image_url" -o "$current_dir/$filename"; then
+          error_message "图片下载失败，请检查 URL 或网络连接."
+          return 1
         fi
 
-        chmod 644 "$current_dir/$filename" || { echo "权限设置失败."; exit 1; }
-
-        # SillyTavern 数据目录
-        sillytavern_data_dir="$HOME/SillyTavern/data/default-user"
-
-        # 角色缩略图目录
-        thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
-
-        # 角色目录
-        character_dir="$sillytavern_data_dir/characters"
-
-        # 复制图片到缩略图目录
-        if cp "$current_dir/$filename" "$thumbnail_dir"; then
-            echo "图片已复制到缩略图目录: $thumbnail_dir/$filename"
-        else
-            echo "复制图片到缩略图目录失败，请检查目录路径和权限."
-            exit 1
+        if ! chmod 644 "$current_dir/$filename"; then
+          error_message "权限设置失败."
+          return 1
         fi
 
-        # 复制图片到角色目录
-        if cp "$current_dir/$filename" "$character_dir"; then
-            echo "图片已复制到角色目录: $character_dir/$filename"
-        else
-            echo "复制图片到角色目录失败，请检查目录路径和权限."
-            exit 1
-        fi
+        local sillytavern_data_dir="$HOME/SillyTavern/data/default-user"
+        local thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
+        local character_dir="$sillytavern_data_dir/characters"
 
-        echo "导入完成."
+        if ! cp "$current_dir/$filename" "$thumbnail_dir"; then
+          error_message "复制图片到缩略图目录失败，请检查目录路径和权限."
+          return 1
+        fi
+        success "图片已复制到缩略图目录: $thumbnail_dir/$filename"
+
+        if ! cp "$current_dir/$filename" "$character_dir"; then
+          error_message "复制图片到角色目录失败，请检查目录路径和权限."
+          return 1
+        fi
+        success "图片已复制到角色目录: $character_dir/$filename"
+
+        success "导入完成."
         read -p "按 Enter 键继续..." -r
         ;;
       2) break ;;
-      *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
+      *) error_message "无效的选择，请重试。" ;;
     esac
   done
 }
 
-if [[ -z "$AUTOSTART" ]]; then
+# --- 主程序逻辑 ---
+local current_version=$(get_sillytavern_version | head -n 1)
+local latest_version=$(get_sillytavern_version | tail -n 1)
+local node_version=$(node --version 2>/dev/null)
+local git_version=$(git --version 2>/dev/null | cut -d ' ' -f 3)
 
-  current_version=$(get_sillytavern_version | head -n 1)
-  latest_version=$(get_sillytavern_version | tail -n 1)
-  node_version=$(node --version)
-  git_version=$(git --version | cut -d ' ' -f 3)
+trap '' INT
 
-  while true; do
-    clear
-    echo -e "
-    ${GREEN}-------------------------------------${NC}
-    ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
-    ${GREEN}-------------------------------------${NC}
-    ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
-    ${YELLOW}TG:https://t.me/Yozorask1${NC}
-    ${GREEN}-------------------------------------${NC}
-    ${GREEN}本地安装路径: $INSTALL_PATH${NC}
-    ${GREEN}SillyTavern本地版本: $current_version${NC}
-    ${GREEN}SillyTavern最新版本: $latest_version${NC}
-    ${GREEN}Node.js版本信息: $node_version${NC}
-    ${GREEN}Git版本信息: $git_version${NC}
-    ${GREEN}-------------------------------------${NC}
-    ${YELLOW}1. 启动 SillyTavern${NC}
-    ${YELLOW}2. 备份用户数据${NC}
-    ${YELLOW}3. 恢复用户数据${NC}
-    ${YELLOW}4. 删除备份文件${NC}
-    ${YELLOW}5. 日志错误解析${NC}
-    ${YELLOW}6. 角色卡URL导入${NC}
-    ${YELLOW}7. 退出${NC}
-    ${GREEN}-------------------------------------${NC}
-    "
+while true; do
+  clear
+  echo -e "
+  ${GREEN}-------------------------------------${NC}
+  ${GREEN}*     SillyTavern管理菜单     *${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
+  ${YELLOW}TG:https://t.me/Yzorask1${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${GREEN}SillyTavern本地版本: $current_version${NC}
+  ${GREEN}SillyTavern最新版本: $latest_version${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${YELLOW}1. 启动SillyTavern${NC}
+  ${YELLOW}2. 备份用户数据${NC}
+  ${YELLOW}3. 恢复用户数据${NC}
+  ${YELLOW}4. 删除备份文件${NC}
+  ${YELLOW}5. 日志错误解析${NC}
+  ${YELLOW}6. 快捷功能菜单${NC}
+  ${YELLOW}7. 退出${NC}
+  ${GREEN}-------------------------------------${NC}
+  "
 
-    read -p "请输入你的选择: " choice
+  read -p "请输入你的选择 (1-7): " choice
 
-    case $choice in
-      1) start_sillytavern ;;
-      2) backup_user_data ;;
-      3) restore_user_data ;;
-      4) delete_backup_files ;;
-      5) view_logs ;;
-      6) sillytavern_quick_config_menu ;;
-      7) exit 0 ;;
-      *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
-    esac
-  done
+  # 输入验证
+  if [[ ! "$choice" =~ ^[1-7]$ ]]; then
+    error_message "无效的选择，请输入1到7之间的数字。"
+    continue
+  fi
 
-else 
-  start_sillytavern
-fi
+  case $choice in
+    1) start_sillytavern ;;
+    2) backup_user_data ;;
+    3) restore_user_data ;;
+    4) delete_backup_files ;;
+    5) view_logs ;;
+    6) sillytavern_quick_config_menu ;;
+    7) exit 0 ;;
+  esac
+done
