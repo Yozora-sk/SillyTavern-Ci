@@ -247,6 +247,8 @@ sillytavern_quick_config_menu() {
   done
 }
 
+trap '' INT
+
 display_menu() {
   local current_version=$(get_sillytavern_version | head -n 1)
   local latest_version=$(get_sillytavern_version | tail -n 1)
