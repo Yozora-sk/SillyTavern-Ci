@@ -30,6 +30,7 @@ success() {
 
 # 版本获取
 get_sillytavern_version() {
+  cd "$INSTALL_PATH"
   local current_version=$(grep version package.json | cut -d '"' -f 4 2>/dev/null || echo "未知版本")
   local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' 2>/dev/null || echo "未知版本")
   echo "$current_version"
@@ -38,9 +39,16 @@ get_sillytavern_version() {
 
 # 公告
 get_announcement() {
-  local announcement=$(curl -s "$ANNOUNCEMENT_URL" 2>/dev/null)
-  if [ -z "$announcement" ]; then
-    announcement="无法获取公告内容。"
+  local announcement=$(curl -s -o /dev/null -w "%{http_code}" "$ANNOUNCEMENT_URL")
+  local http_code=$?
+
+  if [ "$http_code" -eq 0 ]; then # 检查成功响应代码 (200)
+    announcement=$(curl -s "$ANNOUNCEMENT_URL")
+    if [ -z "$announcement" ]; then # 检查内容是否为空
+      announcement="无法获取公告内容。"
+    fi
+  else
+    announcement="无法获取公告内容 (HTTP错误代码: $http_code)."
   fi
   echo "$announcement"
 }
@@ -239,15 +247,11 @@ sillytavern_quick_config_menu() {
   done
 }
 
-local current_version=$(get_sillytavern_version | head -n 1)
-local latest_version=$(get_sillytavern_version | tail -n 1)
-local node_version=$(node --version 2>/dev/null)
-local git_version=$(git --version 2>/dev/null | cut -d ' ' -f 3)
-
-trap '' INT
-
-while true; do
-  clear
+display_menu() {
+  local current_version=$(get_sillytavern_version | head -n 1)
+  local latest_version=$(get_sillytavern_version | tail -n 1)
+  local node_version=$(node --version 2>/dev/null)
+  local git_version=$(git --version 2>/dev/null | cut -d ' ' -f 3)
   local announcement=$(get_announcement)
 
   echo -e "
@@ -272,6 +276,9 @@ while true; do
   ${YELLOW}7. 退出${NC}
   ${GREEN}-------------------------------------${NC}
   "
+}
+
+display_menu
 
   read -p "请输入你的选择 (1-7): " choice
 
