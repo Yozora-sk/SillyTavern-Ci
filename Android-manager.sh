@@ -1,41 +1,34 @@
 #!/bin/bash
 
-# 颜色代码
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# 默认安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
-# 日志文件路径
 LOG_FILE="$INSTALL_PATH/sillytavern.log"
 
-# 日志注释信息
+ANNOUNCEMENT_URL="https://example.com/announcement.txt"
+
 LOG_COMMENT="\
 如报错，请查看以下日志信息，阅读错误处理。
 SillyTavern 程序 90% 的错误来源于网络环境，请检查网络连接。"
 
-# --- 函数定义 ---
-
-# 打印错误信息但不退出
 error_message() {
   echo -e "${RED}$1${NC}"
   sleep 3
 }
 
-# 打印警告信息
 warn() {
   echo -e "${YELLOW}$1${NC}"
 }
 
-# 打印成功信息
 success() {
   echo -e "${GREEN}$1${NC}"
 }
 
-# 获取 SillyTavern 版本
+# 版本获取
 get_sillytavern_version() {
   local current_version=$(grep version package.json | cut -d '"' -f 4 2>/dev/null || echo "未知版本")
   local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' 2>/dev/null || echo "未知版本")
@@ -43,7 +36,7 @@ get_sillytavern_version() {
   echo "$latest_version"
 }
 
-# 启动 SillyTavern
+# 启动
 start_sillytavern() {
   success "启动 SillyTavern..."
   cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
@@ -60,7 +53,7 @@ start_sillytavern() {
   success "SillyTavern 启动成功!"
 }
 
-# 备份用户数据
+# 备份
 backup_user_data() {
   cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
   local parent_dir=$(dirname "$(pwd)")
@@ -76,7 +69,7 @@ backup_user_data() {
   read -p "备份完成。按 Enter 键继续..." -r
 }
 
-# 数据恢复功能
+# 恢复
 restore_user_data() {
   local parent_dir=$(dirname "$(pwd)")
   local backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
@@ -128,7 +121,7 @@ restore_user_data() {
   read -p "数据恢复完成。按 Enter 键继续..." -r
 }
 
-# 备份文件删除功能
+# 备份文件删除
 delete_backup_files() {
   local parent_dir=$(dirname "$(pwd)")
   local backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
@@ -167,7 +160,7 @@ delete_backup_files() {
   read -p "按 Enter 键继续..." -r
 }
 
-# 查看日志
+# 日志
 view_logs() {
   cd "$INSTALL_PATH" || { error_message "切换到 SillyTavern 目录失败"; return 1; }
   if [ -f "$LOG_FILE" ]; then
@@ -179,7 +172,7 @@ view_logs() {
   fi
 }
 
-# SillyTavern快捷配置 子菜单
+# 子菜单
 sillytavern_quick_config_menu() {
   while true; do
     clear
@@ -237,7 +230,6 @@ sillytavern_quick_config_menu() {
   done
 }
 
-# --- 主程序逻辑 ---
 local current_version=$(get_sillytavern_version | head -n 1)
 local latest_version=$(get_sillytavern_version | tail -n 1)
 local node_version=$(node --version 2>/dev/null)
@@ -269,7 +261,6 @@ while true; do
 
   read -p "请输入你的选择 (1-7): " choice
 
-  # 输入验证
   if [[ ! "$choice" =~ ^[1-7]$ ]]; then
     error_message "无效的选择，请输入1到7之间的数字。"
     continue
