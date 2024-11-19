@@ -9,7 +9,7 @@ INSTALL_PATH="$HOME/SillyTavern"
 
 LOG_FILE="$INSTALL_PATH/sillytavern.log"
 
-ANNOUNCEMENT_URL="https://example.com/announcement.txt"
+ANNOUNCEMENT_URL="https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/refs/heads/main/ANNOUNCEMENT"
 
 LOG_COMMENT="\
 如报错，请查看以下日志信息，阅读错误处理。
@@ -34,6 +34,15 @@ get_sillytavern_version() {
   local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' 2>/dev/null || echo "未知版本")
   echo "$current_version"
   echo "$latest_version"
+}
+
+# 公告
+get_announcement() {
+  local announcement=$(curl -s "$ANNOUNCEMENT_URL" 2>/dev/null)
+  if [ -z "$announcement" ]; then
+    announcement="无法获取公告内容。"
+  fi
+  echo "$announcement"
 }
 
 # 启动
@@ -239,6 +248,8 @@ trap '' INT
 
 while true; do
   clear
+  local announcement=$(get_announcement)
+
   echo -e "
   ${GREEN}-------------------------------------${NC}
   ${GREEN}*     SillyTavern管理菜单     *${NC}
@@ -248,6 +259,9 @@ while true; do
   ${GREEN}-------------------------------------${NC}
   ${GREEN}SillyTavern本地版本: $current_version${NC}
   ${GREEN}SillyTavern最新版本: $latest_version${NC}
+  ${GREEN}-------------------------------------${NC}
+  ${YELLOW}公告：${NC}
+  ${YELLOW}$announcement${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}1. 启动SillyTavern${NC}
   ${YELLOW}2. 备份用户数据${NC}
