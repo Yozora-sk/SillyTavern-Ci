@@ -82,10 +82,10 @@ update_sillytavern() {
 }
 
 download_second_script() {
-  echo -e "${YELLOW}正在下载第二个脚本...${NC}"
-  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载脚本失败${NC}"; exit 1; }
-  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置脚本执行权限失败${NC}"; exit 1; }
-  echo -e "${GREEN}脚本下载完成！${NC}"
+  echo -e "${YELLOW}正在下载主程序...${NC}"
+  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载文件失败${NC}"; exit 1; }
+  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置执行权限失败${NC}"; exit 1; }
+  echo -e "${GREEN}下载完成！${NC}"
 }
 
 setup_autostart() {
@@ -104,7 +104,7 @@ setup_autostart() {
 }
 
 run_second_script() {
-  echo -e "${YELLOW}正在运行第二个脚本...${NC}"
+  echo -e "${YELLOW}正在启动主程序...${NC}"
   bash "$HOME/sillytavern_manager.sh"
 }
 
