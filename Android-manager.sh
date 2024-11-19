@@ -30,7 +30,6 @@ start_sillytavern() {
   echo "启动 SillyTavern..."
   cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
 
-  # 删除之前的日志文件
   if [ -f "$LOG_FILE" ]; then
     rm "$LOG_FILE" || echo -e "${YELLOW}删除之前的日志文件 $LOG_FILE 失败，可能文件已被占用或权限不足。${NC}"
   fi
@@ -40,7 +39,7 @@ start_sillytavern() {
   echo -e "${GREEN}SillyTavern 启动成功!${NC}"
 }
 
-# 备份data数据
+# 备份用户数据
 backup_user_data() {
   parent_dir=$(dirname "$(pwd)")
   timestamp=$(date +%Y%m%d_%H%M%S)
@@ -52,10 +51,10 @@ backup_user_data() {
   read -p "备份完成。按 Enter 键继续..." -r
 }
 
-# 数据恢复
+# 数据恢复功能
 restore_user_data() {
   parent_dir=$(dirname "$(pwd)")
-backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
+  backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
 
   if [ -z "$backup_files" ]; then
     echo -e "${RED}未找到备份文件。${NC}"
@@ -89,15 +88,18 @@ backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev
 
   temp_dir=$(mktemp -d) || { echo -e "${RED}创建临时目录失败${NC}"; return 1; }
 
+  # 解压备份文件到临时目录
   tar -xzvf "$selected_file" -C "$temp_dir" || { echo -e "${RED}解压备份文件失败${NC}"; rm -rf "$temp_dir"; return 1; }
 
+  # 检查解压后的data目录
   data_dir="$temp_dir/data"
   if [ ! -d "$data_dir" ]; then
       echo -e "${RED}备份文件不包含data目录${NC}"
       rm -rf "$temp_dir"
       return 1
   fi
-  
+
+  # 替换原data目录
   rm -rf data || { echo -e "${RED}删除原data目录失败${NC}"; rm -rf "$temp_dir"; return 1; }
   mv "$data_dir" data || { echo -e "${RED}移动data目录失败${NC}"; rm -rf "$temp_dir"; return 1; }
   rm -rf "$temp_dir"
@@ -106,7 +108,7 @@ backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev
   read -p "数据恢复完成。按 Enter 键继续..." -r
 }
 
-# 备份文件删除
+# 备份文件删除功能
 delete_backup_files() {
   parent_dir=$(dirname "$(pwd)")
   backup_files=$(find "$parent_dir" -name "SillyTavern_data_backup_*tar.gz" 2>/dev/null)
@@ -170,13 +172,15 @@ sillytavern_quick_config_menu() {
 
     case $choice in
       1)
+        # 获取sillytavern-manager.sh所在的目录
         current_dir=$(dirname "$(readlink -f "$0")")
 
         cd ~
 
+        # 输入图片 URL
         read -p "请输入角色卡图片的 URL: " image_url
 
-        filename=$(basename "$image_url" | cut -d'?' -f1) 
+        filename=$(basename "$image_url" | cut -d'?' -f1)  
 
         if curl -s -L "$image_url" -o "$current_dir/$filename"; then
             echo "图片下载成功: $current_dir/$filename"
@@ -185,15 +189,10 @@ sillytavern_quick_config_menu() {
             exit 1
         fi
 
-        if chmod 777 "$current_dir/$filename"; then
-            echo "权限设置成功."
-        else
-            echo "权限设置失败."
-            exit 1
-        fi
+        chmod 644 "$current_dir/$filename" || { echo "权限设置失败."; exit 1; }
 
-        # 数据目录
-        sillytavern_data_dir="SillyTavern/data/default-user"
+        # SillyTavern 数据目录
+        sillytavern_data_dir="$HOME/SillyTavern/data/default-user"
 
         # 角色缩略图目录
         thumbnail_dir="$sillytavern_data_dir/thumbnails/avatar"
@@ -201,6 +200,7 @@ sillytavern_quick_config_menu() {
         # 角色目录
         character_dir="$sillytavern_data_dir/characters"
 
+        # 复制图片到缩略图目录
         if cp "$current_dir/$filename" "$thumbnail_dir"; then
             echo "图片已复制到缩略图目录: $thumbnail_dir/$filename"
         else
@@ -208,6 +208,7 @@ sillytavern_quick_config_menu() {
             exit 1
         fi
 
+        # 复制图片到角色目录
         if cp "$current_dir/$filename" "$character_dir"; then
             echo "图片已复制到角色目录: $character_dir/$filename"
         else
@@ -224,41 +225,52 @@ sillytavern_quick_config_menu() {
   done
 }
 
-# 获取版本信息
-current_version=$(get_sillytavern_version | head -n 1)
-latest_version=$(get_sillytavern_version | tail -n 1)
-node_version=$(node --version)
-git_version=$(git --version | cut -d ' ' -f 3)
+if [[ -z "$AUTOSTART" ]]; then
 
-# 用户菜单
-while true; do
-  clear
-  echo -e "
-  ${GREEN}-------------------------------------${NC}
-  ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
-  ${GREEN}-------------------------------------${NC}
-  ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
-  ${YELLOW}TG:https://t.me/Yozorask1${NC}
-  ${GREEYELLOW}1. 启动 SillyTavern${NC}
-  ${YELLOW}2. 备份用户数据${NC}
-  ${YELLOW}3. 恢复用户数据${NC}
-  ${YELLOW}4. 删除备份文件${NC}
-  ${YELLOW}5. 日志错误解析${NC}
-  ${YELLOW}6. 角色卡URL导入${NC}
-  ${YELLOW}7. 退出${NC}
-  ${GREEN}-------------------------------------${NC}
-  "
+  current_version=$(get_sillytavern_version | head -n 1)
+  latest_version=$(get_sillytavern_version | tail -n 1)
+  node_version=$(node --version)
+  git_version=$(git --version | cut -d ' ' -f 3)
 
-  read -p "请输入你的选择: " choice
+  while true; do
+    clear
+    echo -e "
+    ${GREEN}-------------------------------------${NC}
+    ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
+    ${GREEN}-------------------------------------${NC}
+    ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
+    ${YELLOW}TG:https://t.me/Yozorask1${NC}
+    ${GREEN}-------------------------------------${NC}
+    ${GREEN}本地安装路径: $INSTALL_PATH${NC}
+    ${GREEN}SillyTavern本地版本: $current_version${NC}
+    ${GREEN}SillyTavern最新版本: $latest_version${NC}
+    ${GREEN}Node.js版本信息: $node_version${NC}
+    ${GREEN}Git版本信息: $git_version${NC}
+    ${GREEN}-------------------------------------${NC}
+    ${YELLOW}1. 启动 SillyTavern${NC}
+    ${YELLOW}2. 备份用户数据${NC}
+    ${YELLOW}3. 恢复用户数据${NC}
+    ${YELLOW}4. 删除备份文件${NC}
+    ${YELLOW}5. 日志错误解析${NC}
+    ${YELLOW}6. 角色卡URL导入${NC}
+    ${YELLOW}7. 退出${NC}
+    ${GREEN}-------------------------------------${NC}
+    "
 
-  case $choice in
-    1) start_sillytavern ;;
-    2) backup_user_data ;;
-    3) restore_user_data ;;
-    4) delete_backup_files ;;
-    5) view_logs ;;
-    6) sillytavern_quick_config_menu ;;
-    7) exit 0 ;;
-    *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
-  esac
-done 
+    read -p "请输入你的选择: " choice
+
+    case $choice in
+      1) start_sillytavern ;;
+      2) backup_user_data ;;
+      3) restore_user_data ;;
+      4) delete_backup_files ;;
+      5) view_logs ;;
+      6) sillytavern_quick_config_menu ;;
+      7) exit 0 ;;
+      *) echo -e "${RED}无效的选择，请重试。${NC}" ;;
+    esac
+  done
+
+else 
+  start_sillytavern
+fi
