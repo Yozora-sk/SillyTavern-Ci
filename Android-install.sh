@@ -1,16 +1,37 @@
 #!/bin/bash
 
+# 颜色代码
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
+# 默认安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
-SCRIPT_URL="https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/Android-manager.sh"
+# 下载第二个脚本的URL (请替换成你的实际地址)
+SCRIPT_URL="YOUR_SECOND_SCRIPT_URL"
 
+# 更新数据源
 update_system() {
     apt update && apt upgrade -y
+}
+
+# 检查和安装curl
+check_curl() {
+  if command -v curl &> /dev/null; then
+    curl_version=$(curl --version | head -n 1)
+    echo -e "${GREEN}已找到 curl: $curl_version${NC}"
+  else
+    echo -e "${YELLOW}未找到 curl，正在尝试安装...${NC}"
+    if apt install -y curl &> /dev/null; then  
+        curl_version=$(curl --version | head -n 1)
+        echo -e "${GREEN}curl 安装成功: $curl_version${NC}"
+    else
+        echo -e "${RED}curl 安装失败${NC}"
+        exit 1  
+    fi
+  fi
 }
 
 # 检查并安装 Node.js 和 Git
@@ -81,13 +102,15 @@ update_sillytavern() {
   echo -e "${GREEN}SillyTavern 更新成功!${NC}"
 }
 
+# 下载第二个脚本
 download_second_script() {
-  echo -e "${YELLOW}正在下载主程序...${NC}"
-  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载文件失败${NC}"; exit 1; }
-  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置执行权限失败${NC}"; exit 1; }
-  echo -e "${GREEN}下载完成！${NC}"
+  echo -e "${YELLOW}正在下载第二个脚本...${NC}"
+  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载脚本失败${NC}"; exit 1; }
+  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置脚本执行权限失败${NC}"; exit 1; }
+  echo -e "${GREEN}脚本下载完成！${NC}"
 }
 
+# 设置 Termux 自动启动
 setup_autostart() {
   echo -e "${YELLOW}正在设置 Termux 自动启动...${NC}"
 
@@ -103,21 +126,27 @@ setup_autostart() {
   fi
 }
 
+# 运行第二个脚本
 run_second_script() {
-  echo -e "${YELLOW}正在启动主程序...${NC}"
+  echo -e "${YELLOW}正在运行第二个脚本...${NC}"
   bash "$HOME/sillytavern_manager.sh"
 }
 
+# 初始化
 update_system
+check_curl
 check_node_git
 check_esbuild
 setup_sillytavern
 update_sillytavern
 
+# 下载第二个脚本
 download_second_script
 
+# 设置 Termux 自动启动
 setup_autostart
 
+# 运行第二个脚本
 run_second_script
 
 echo -e "${GREEN}所有设置完成！${NC}"
