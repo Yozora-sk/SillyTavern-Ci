@@ -1,16 +1,13 @@
 #!/bin/bash
 
-# 颜色代码
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# 默认安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
-# 下载第二个脚本的URL (请替换成你的实际地址)
-SCRIPT_URL="YOUR_SECOND_SCRIPT_URL"
+SCRIPT_URL="https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/Android-manager.sh"
 
 # 更新数据源
 update_system() {
@@ -102,17 +99,16 @@ update_sillytavern() {
   echo -e "${GREEN}SillyTavern 更新成功!${NC}"
 }
 
-# 下载第二个脚本
 download_second_script() {
-  echo -e "${YELLOW}正在下载第二个脚本...${NC}"
-  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载脚本失败${NC}"; exit 1; }
-  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置脚本执行权限失败${NC}"; exit 1; }
-  echo -e "${GREEN}脚本下载完成！${NC}"
+  echo -e "${YELLOW}正在下载主程序...${NC}"
+  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载失败${NC}"; exit 1; }
+  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置执行权限失败${NC}"; exit 1; }
+  echo -e "${GREEN}下载完成！${NC}"
 }
 
 # 设置 Termux 自动启动
 setup_autostart() {
-  echo -e "${YELLOW}正在设置 Termux 自动启动...${NC}"
+  echo -e "${YELLOW}正在设置Termux自动启动...${NC}"
 
   if [ ! -f "$HOME/.bashrc" ]; then
     touch "$HOME/.bashrc"
@@ -126,13 +122,11 @@ setup_autostart() {
   fi
 }
 
-# 运行第二个脚本
 run_second_script() {
-  echo -e "${YELLOW}正在运行第二个脚本...${NC}"
+  echo -e "${YELLOW}正在启动主程序...${NC}"
   bash "$HOME/sillytavern_manager.sh"
 }
 
-# 初始化
 update_system
 check_curl
 check_node_git
@@ -140,13 +134,10 @@ check_esbuild
 setup_sillytavern
 update_sillytavern
 
-# 下载第二个脚本
 download_second_script
 
-# 设置 Termux 自动启动
 setup_autostart
 
-# 运行第二个脚本
 run_second_script
 
 echo -e "${GREEN}所有设置完成！${NC}"
