@@ -24,6 +24,9 @@ wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
 # 安装Node.js
 source ~/.bashrc
+
+sleep 5
+
 nvm install v20 && echo "${GREEN}Node.js 安装完成${NC}" || { echo "${RED}Node.js 安装失败${NC}"; exit 1; }
 
 # 安装pm2
