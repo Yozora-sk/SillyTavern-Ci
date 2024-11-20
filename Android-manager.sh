@@ -281,6 +281,7 @@ display_menu() {
 }
 
 display_menu
+trap '' INT
 
   read -p "请输入你的选择 (1-7): " choice
 
