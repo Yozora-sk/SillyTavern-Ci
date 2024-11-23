@@ -1,6 +1,5 @@
 #!/bin/bash
 
-current=/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu
 # 更新软件包列表
 pkg update -y
 
@@ -21,5 +20,5 @@ fi
 
 # 在 Ubuntu 中执行命令
 proot-distro login ubuntu << EOF
-wget -O https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/2.sh && chmod +x 2.sh && ./2.sh
+curl -O https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/2.sh && chmod +x 2.sh && ./2.sh
 EOF
