@@ -21,5 +21,5 @@ fi
 
 # 在 Ubuntu 中执行命令
 proot-distro login ubuntu << EOF
-curl -O https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/2.sh && chmod +x 2.sh && ./2.sh
+wget -O https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/main/2.sh && chmod +x 2.sh && ./2.sh
 EOF
