@@ -76,36 +76,6 @@ setup_sillytavern() {
   fi
 }
 
-# 获取 SillyTavern 版本
-get_sillytavern_version() {
-  local current_version=$(grep version package.json | cut -d '"' -f 4) || current_version="未知版本"
-  local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' || echo "未知版本")
-  echo "$current_version"
-  echo "$latest_version"
-}
-
-# 更新 SillyTavern
-update_sillytavern() {
-  cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
-  current_version=$(get_sillytavern_version | head -n 1)
-  latest_version=$(get_sillytavern_version | tail -n 1)
-
-  if [[ "$current_version" == "$latest_version" ]]; then
-    echo -e "${YELLOW}SillyTavern 已经是最新版本 ($current_version)。${NC}"
-    return 0
-  fi
-  echo "更新 SillyTavern..."
-  git pull || { echo -e "${RED}更新 SillyTavern 失败${NC}"; exit 1; }
-  echo -e "${GREEN}SillyTavern 更新成功!${NC}"
-}
-
-download_second_script() {
-  echo -e "${YELLOW}正在下载主程序...${NC}"
-  curl -o "$HOME/sillytavern_manager.sh" -L "$SCRIPT_URL" || { echo -e "${RED}下载失败${NC}"; exit 1; }
-  chmod +x "$HOME/sillytavern_manager.sh" || { echo -e "${RED}设置执行权限失败${NC}"; exit 1; }
-  echo -e "${GREEN}下载完成！${NC}"
-}
-
 # 设置 Termux 自动启动
 setup_autostart() {
   echo -e "${YELLOW}正在设置Termux自动启动...${NC}"
@@ -132,7 +102,6 @@ check_curl
 check_node_git
 check_esbuild
 setup_sillytavern
-update_sillytavern
 
 download_second_script
 
