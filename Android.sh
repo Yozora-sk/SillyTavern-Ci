@@ -34,7 +34,7 @@ check_node_git() {
     echo -e "${GREEN}已找到 Node.js: $node_version${NC}"
   else
     echo -e "${YELLOW}未找到 Node.js，正在尝试安装...${NC}"
-    apt install -y nodejs || { echo -e "${RED}Node.js 安装失败${NC}"; exit 1; }
+    pkg install -y nodejs || { echo -e "${RED}Node.js 安装失败${NC}"; exit 1; }
     node_version=$(node --version)
     echo -e "${GREEN}Node.js 安装成功: $node_version${NC}"
   fi
@@ -44,7 +44,7 @@ check_node_git() {
     echo -e "${GREEN}已找到 Git: $git_version${NC}"
   else
     echo -e "${YELLOW}未找到 Git，正在尝试安装...${NC}"
-    apt install -y git || { echo -e "${RED}Git 安装失败${NC}"; exit 1; }
+    pkg install -y git || { echo -e "${RED}Git 安装失败${NC}"; exit 1; }
     git_version=$(git --version | cut -d ' ' -f 3)
     echo -e "${GREEN}Git 安装成功: $git_version${NC}"
   fi
