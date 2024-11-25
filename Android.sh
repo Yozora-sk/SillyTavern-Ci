@@ -347,7 +347,7 @@ while true; do
   ${GREEN}*     SillyTavern 管理菜单 Test       *${NC}
   ${GREEN}-------------------------------------${NC}
   ${YELLOW}By: Yozora  Bilibili: 601449119${NC}
-  ${YELLOW}遇错看教程:https://01.skyi.cc${NC}
+  ${YELLOW}遇错看教程:https://an.nightan.xyz${NC}
   ${GREEN}-------------------------------------${NC}
   ${GREEN}本地安装路径: $INSTALL_PATH${NC}
   ${GREEN}SillyTavern本地版本: $current_version${NC}
