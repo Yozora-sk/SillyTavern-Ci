@@ -1,31 +1,26 @@
 #!/bin/bash
 
-# 颜色代码
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-# 默认安装路径
 INSTALL_PATH="$HOME/SillyTavern"
 
-# 版本信息缓存
 CURRENT_VERSION=""
 LATEST_VERSION=""
 ANNOUNCEMENT=""
 LAST_UPDATE=0
 
-# 检查是否需要更新信息(每5分钟更新一次)
 need_update() {
     current_time=$(date +%s)
     time_diff=$((current_time - LAST_UPDATE))
     if [ $time_diff -gt 300 ] || [ -z "$CURRENT_VERSION" ]; then
-        return 0  # 需要更新
+        return 0  
     fi
-    return 1     # 不需要更新
+    return 1     
 }
 
-# 更新信息
 update_info() {
     cd "$INSTALL_PATH" || return
     CURRENT_VERSION=$(grep version package.json | cut -d '"' -f 4) || CURRENT_VERSION="未知版本"
@@ -34,7 +29,6 @@ update_info() {
     LAST_UPDATE=$(date +%s)
 }
 
-# 获取 SillyTavern 版本
 get_sillytavern_version() {
     local current_version=$(grep version package.json | cut -d '"' -f 4) || current_version="未知版本"
     local latest_version=$(curl -s https://raw.githubusercontent.com/SillyTavern/SillyTavern/refs/heads/release/package.json 2>/dev/null | grep '"version"' | awk -F '"' '{print $4}' || echo "未知版本")
@@ -42,13 +36,11 @@ get_sillytavern_version() {
     echo "$latest_version"
 }
 
-# 获取公告
 get_announcement() {
     announcement=$(curl -s "https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/refs/heads/main/ANNOUNCEMENT") || return 1
     echo "$announcement"
 }
 
-# 检查并下载错误数据库
 update_error_db() {
     local tmp_file="/data/data/com.termux/files/home/error_db_tmp"
     if curl -s "https://raw.githubusercontent.com/Yozora-sk/SillyTavern-Ci/refs/heads/main/Bug" -o "$tmp_file"; then
@@ -60,14 +52,12 @@ update_error_db() {
     fi
 }
 
-# 启动 SillyTavern
 start_sillytavern() {
     echo "启动 SillyTavern..."
     cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; exit 1; }
     ./start.sh || { echo -e "${RED}启动 SillyTavern 失败${NC}"; exit 1; }
 }
 
-# 备份用户数据
 backup_user_data() {
     cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
     timestamp=$(date +%Y%m%d_%H%M%S)
@@ -78,7 +68,6 @@ backup_user_data() {
     read -p "按 Enter 继续..." -r
 }
 
-# 数据恢复功能
 restore_user_data() {
     cd "$INSTALL_PATH" || { echo -e "${RED}切换到 SillyTavern 目录失败${NC}"; return 1; }
     backup_files=$(find "$HOME" -maxdepth 1 -name "SillyTavern_backup_*.tar.gz" 2>/dev/null)
@@ -110,7 +99,6 @@ restore_user_data() {
     read -p "按 Enter 继续..." -r
 }
 
-# 删除备份文件
 delete_backup_files() {
     backup_files=$(find "$HOME" -maxdepth 1 -name "SillyTavern_backup_*.tar.gz" 2>/dev/null)
     if [ -z "$backup_files" ]; then
@@ -138,7 +126,6 @@ delete_backup_files() {
     read -p "按 Enter 继续..." -r
 }
 
-# 重装菜单
 reinstall_menu() {
     while true; do
         clear
@@ -157,20 +144,17 @@ reinstall_menu() {
     done
 }
 
-# 保留角色重装
 reinstall_tavern_keep_characters() {
     clear
     echo -e "${YELLOW}[保留角色重装]${NC}"
     echo -e "${RED}警告：此操作将重新安装 SillyTavern，但会保留你的角色卡！${NC}"
     
-    # 显示分支选择
     echo -e "\n${GREEN}请选择安装分支：${NC}"
     echo -e "1. 正式版"
     echo -e "2. 测试版"
     
     read -p "请选择分支 [1-2]: " branch_choice
     
-    # 设置分支名称
     case $branch_choice in
         1) branch="release" ;;
         2) branch="staging" ;;
@@ -188,10 +172,8 @@ reinstall_tavern_keep_characters() {
         return
     fi
 
-    # 首先切换到 HOME 目录
     cd "$HOME" || exit 1
 
-    # 创建临时目录用于保存角色卡
     tmp_dir="$HOME/st_characters_backup_tmp"
     mkdir -p "$tmp_dir"
 
@@ -243,7 +225,6 @@ reinstall_tavern_keep_characters() {
         echo -e "${RED}× 克隆失败，请检查网络${NC}"
     fi
 
-    # 清理临时目录
     rm -rf "$tmp_dir"
 
     echo -e "\n${GREEN}重装完成！${NC}"
@@ -251,20 +232,17 @@ reinstall_tavern_keep_characters() {
     read -p "按 Enter 返回主菜单..." -r
 }
 
-# 彻底重装
 reinstall_tavern() {
     clear
     echo -e "${YELLOW}[彻底重装]${NC}"
     echo -e "${RED}警告：此操作将完全重新安装 SillyTavern！${NC}"
     
-    # 显示分支选择
     echo -e "\n${GREEN}请选择安装分支：${NC}"
     echo -e "1. 正式版"
     echo -e "2. 测试版"
     
-    read -p "请选择分支 [1-3]: " branch_choice
+    read -p "请选择分支 [1-2]: " branch_choice
     
-    # 设置分支名称
     case $branch_choice in
         1) branch="release" ;;
         2) branch="staging" ;;
@@ -282,7 +260,6 @@ reinstall_tavern() {
         return
     fi
 
-    # 首先切换到 HOME 目录
     cd "$HOME" || exit 1
 
     echo -e "\n${YELLOW}1. 删除现有安装...${NC}"
@@ -313,7 +290,6 @@ reinstall_tavern() {
     read -p "按 Enter 返回主菜单..." -r
 }
 
-# 数据管理菜单
 data_management_menu() {
     while true; do
         clear
@@ -334,14 +310,12 @@ data_management_menu() {
     done
 }
 
-# 导入角色卡
 import_character_card() {
     echo -e "${YELLOW}开始导入角色卡...${NC}"
     
     read -p "输入角色卡URL: " image_url
     filename=$(basename "$image_url" | cut -d'?' -f1)
 
-    # 创建临时目录并设置权限
     tmp_dir="/data/data/com.termux/files/home/tmp_character"
     rm -rf "$tmp_dir" 2>/dev/null
     mkdir -p "$tmp_dir"
@@ -349,11 +323,9 @@ import_character_card() {
 
     echo -e "${YELLOW}正在下载文件: $filename${NC}"
     
-    # 下载文件
     if curl -L "$image_url" -o "$tmp_dir/$filename"; then
         echo -e "${GREEN}文件下载成功${NC}"
         
-        # 确保目标目录存在并设置权限
         target_dirs=(
             "$INSTALL_PATH/data/default-user/characters"
             "$INSTALL_PATH/data/default-user/thumbnails/avatar"
@@ -364,7 +336,6 @@ import_character_card() {
             chmod 777 "$dir"
         done
         
-        # 复制文件到目标位置
         for dir in "${target_dirs[@]}"; do
             cp "$tmp_dir/$filename" "$dir/" && \
             chmod 666 "$dir/$filename"
@@ -382,24 +353,20 @@ import_character_card() {
         echo -e "${YELLOW}尝试的URL: $image_url${NC}"
     fi
 
-    # 清理临时文件
     rm -rf "$tmp_dir"
     read -p "按 Enter 继续..." -r
 }
 
-# API配置
 configure_api() {
     echo -e "一键配置功能待更新..."
     read -p "按 Enter 继续..." -r
 }
 
-# 外观设置
 configure_appearance() {
     echo -e "主题更改待更新..."
     read -p "按 Enter 继续..." -r
 }
 
-# 快捷菜单
 quick_menu() {
     while true; do
         clear
@@ -420,17 +387,14 @@ quick_menu() {
     done
 }
 
-# 搜索错误
 search_error() {
     local search_term="$1"
     local error_db="/data/data/com.termux/files/home/error_db"
     local results=()
     local found=0
 
-    # 转换搜索词为小写
     search_term=$(echo "$search_term" | tr '[:upper:]' '[:lower:]')
 
-    # 确保错误数据库文件存在
     if [ ! -f "$error_db" ]; then
         echo -e "${YELLOW}正在更新错误数据库...${NC}"
         if ! update_error_db; then
@@ -439,13 +403,10 @@ search_error() {
         fi
     fi
 
-    # 读取每一行并进行匹配
     while IFS= read -r line; do
-        # 获取#前的部分并转换为小写进行比较
         local error_key=$(echo "$line" | cut -d'#' -f1 | tr '[:upper:]' '[:lower:]')
         
         if [[ "$error_key" == "$search_term" ]]; then
-            # 获取#之后的解决方案
             local solution=$(echo "$line" | cut -d'#' -f2-)
             if [ ! -z "$solution" ]; then
                 results+=("$solution")
@@ -454,7 +415,6 @@ search_error() {
         fi
     done < "$error_db"
 
-    # 显示结果
     if [ $found -eq 1 ]; then
         echo -e "${GREEN}找到以下解决方案：${NC}"
         for solution in "${results[@]}"; do
@@ -468,7 +428,6 @@ search_error() {
 error_query_menu() {
     while true; do
         clear
-        # 显示设备信息
         echo -e "${GREEN}设备信息${NC}"
         echo -e "制造商: ${YELLOW}$(getprop ro.product.manufacturer)${NC}"
         echo -e "型号: ${YELLOW}$(getprop ro.product.model)${NC}"
@@ -516,7 +475,6 @@ error_query_menu() {
     done
 }
 
-# 显示菜单信息
 show_menu_info() {
     if need_update; then
         update_info
@@ -531,11 +489,9 @@ show_menu_info() {
     echo -e "${YELLOW}=================${NC}"
 }
 
-# 主菜单
 main_menu() {
     cd "$INSTALL_PATH" || { echo -e "${RED}SillyTavern未安装，请先运行安装脚本${NC}"; exit 1; }
     
-    # 首次进入菜单时更新信息
     update_info
     
     while true; do
@@ -562,8 +518,6 @@ main_menu() {
     done
 }
 
-# 捕获 Ctrl+C
 trap '' INT
 
-# 运行主菜单
 main_menu
