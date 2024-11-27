@@ -1,4 +1,3 @@
 Settings could not be saved#Termux的进程被杀死或者暂停了，不要对Termux进行任何后台限制
-API returned an error#内容为OK:不要对Termux进行任何后台限制，重启Termux。
-内容为其他:询问售卖你API的商家
+API returned an error#1.内容为OK:不要对Termux进行任何后台限制，重启Termux。2.内容为其他:询问售卖你API的商家
 
