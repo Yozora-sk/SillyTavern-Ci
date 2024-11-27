@@ -103,7 +103,6 @@ batch_process() {
         
         ((status_counts["$status_code"]++))
         
-        # 分类保存token
         if [ "$token_status" = "true" ]; then
             echo "$token" >> "$valid_file"
         else
@@ -161,4 +160,13 @@ while true; do
         0)
             echo -e "\n${YELLOW}Goodbye!${NC}"
             exit 0
+            ;;
+        *)
+            echo -e "${RED}Invalid option!${NC}"
+            ;;
+    esac
+    
+    echo
+    read -p "Press Enter to continue..."
+done
     
