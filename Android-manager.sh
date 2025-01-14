@@ -6,6 +6,8 @@ YELLOW='\033[0;33m'
 NC='\033[0m'
 
 INSTALL_PATH="$HOME/SillyTavern"
+CLEWD_INSTALL_PATH="$HOME/clewd"  # Install path for Clewd
+CLEWD_COOKIE="" # Variable to store cookie
 
 CURRENT_VERSION=""
 LATEST_VERSION=""
@@ -284,6 +286,157 @@ miscellaneous_tools_menu() {
         esac
     done
 }
+# New Clewd Functions
+start_clewd() {
+    echo "启动 Clewd..."
+    if [ ! -d "$CLEWD_INSTALL_PATH" ]; then
+        echo -e "${RED}Clewd 未安装，请先安装环境${NC}"
+        read -p "按 Enter 继续..." -r
+        return 1;
+    fi
+
+     # Use proot-distro login to run the start command within the Ubuntu environment
+    proot-distro login ubuntu -- bash -c "cd /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/clewd && bash start.sh" || { echo -e "${RED}启动 Clewd 失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+
+
+    echo -e "${GREEN}Clewd 已启动 (如果 Clewd 需要特定的启动命令，请自行配置)${NC}"
+    read -p "按 Enter 继续..." -r
+}
+
+install_clewd_env() {
+    echo "安装 Clewd 环境..."
+    if ! command -v proot-distro &> /dev/null; then
+        echo -e "${RED}proot-distro 未安装，尝试安装...${NC}"
+        pkg install proot-distro || { echo -e "${RED}proot-distro 安装失败: 安装 proot-distro 失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+    fi
+    if [ -d "$CLEWD_INSTALL_PATH" ]; then
+         echo -e "${YELLOW}Clewd 环境目录已存在，跳过创建目录 ${NC}"
+    else
+      mkdir -p "$CLEWD_INSTALL_PATH"
+      if [ ! -d "$CLEWD_INSTALL_PATH" ]; then
+         echo -e "${RED}创建 Clewd 环境目录失败${NC}"
+        read -p "按 Enter 继续..." -r
+        return 1
+      fi
+    fi
+
+    # Check if Ubuntu is already installed
+    if proot-distro list | grep -q "ubuntu"; then
+        echo -e "${YELLOW}Ubuntu 已安装，跳过安装步骤，尝试克隆 Clewd...${NC}"
+        # Directly clone clewd without using proot-distro login command for updating.
+       cd /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/
+       git clone https://github.com/teralomaniac/clewd.git || { echo -e "${RED}克隆 Clewd 失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+
+    else
+        proot-distro install ubuntu 2>&1 | grep -q "already installed"
+         if [ $? -ne 0 ]; then
+            proot-distro install ubuntu || { echo -e "${RED}Ubuntu 安装失败: 尝试安装 ubuntu 时失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+        fi
+       echo -e "${YELLOW}Ubuntu 安装完成，尝试克隆 Clewd...${NC}"
+
+       # Directly clone clewd without using proot-distro login command for updating.
+       cd /data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/
+       git clone https://github.com/teralomaniac/clewd.git || { echo -e "${RED}克隆 Clewd 失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+
+    fi
+
+
+    echo -e "${GREEN}Clewd 环境安装完成，Clewd 代码已克隆到 Ubuntu 系统中。${NC}"
+    read -p "按 Enter 继续..." -r
+}
+
+update_clewd() {
+    echo "更新 Clewd..."
+    if [ ! -d "$CLEWD_INSTALL_PATH" ]; then
+        echo -e "${RED}Clewd 未安装，请先安装环境${NC}"
+        read -p "按 Enter 继续..." -r
+    else
+        proot-distro login ubuntu -d "$CLEWD_INSTALL_PATH" -c "apt update"
+          echo -e "${GREEN}Clewd 环境更新完成${NC}"
+           read -p "按 Enter 继续..." -r
+        
+    fi
+}
+
+
+add_cookie() {
+    echo "添加 Cookie..."
+    read -p "请输入 Cookie: " cookie_input
+
+    local extracted_cookie=""
+    local cookie_to_add=""
+
+    # 检查输入的 Cookie 中是否包含以 sessionKey 开头且以 AA 结尾的字符串
+    if [[ "$cookie_input" =~ (sessionKey=[^;]*AA) ]]; then
+        extracted_cookie="${BASH_REMATCH[1]}"
+        echo "成功提取 sessionKey: $extracted_cookie"
+        cookie_to_add="claude_pro@$extracted_cookie"
+    else
+        echo -e "${RED}输入的 Cookie 不符合格式，必须包含以 sessionKey 开头且以 AA 结尾的字符串。${NC}"
+        read -p "按 Enter 继续..." -r
+        return 1
+    fi
+    
+
+    # 检查 vim 是否安装并安装
+    if ! command -v vim &> /dev/null; then
+         echo "vim 未安装，尝试安装..."
+         proot-distro login ubuntu -- apt update && proot-distro login ubuntu -- apt install -y vim || { echo -e "${RED}vim 安装失败${NC}"; read -p "按 Enter 继续..." -r; return 1; }
+    fi
+     # 定义 config.js 的路径
+     config_file="/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootfs/ubuntu/root/clewd/config.js"
+
+     # 读取 config.js 内容
+    if [ ! -f "$config_file" ]; then
+        echo -e "${RED}config.js 文件不存在! 请先安装环境${NC}"
+        read -p "按 Enter 继续..." -r
+        return 1;
+    fi
+    config_content=$(cat "$config_file")
+
+    # 在 CookieArray 中添加新的 Cookie (使用更安全的 sed 命令)
+    new_config_content=$(echo "$config_content" | sed "s/\(\"CookieArray\": \[\)/\1\n        \"$cookie_to_add\",/")
+
+    # 如果添加失败，尝试另一种模式 (可能 CookieArray 为空)
+    if [[ "$config_content" == "$new_config_content" ]]; then
+        new_config_content=$(echo "$config_content" | sed "s/\(\"CookieArray\": \[)/\1\n        \"$cookie_to_add\"\n    /")
+    fi
+
+   # 将修改后的内容写入 config.js
+   echo "$new_config_content" > "$config_file"
+
+  if [ "$?" -ne 0 ]; then
+         echo -e "${RED}修改 config.js 失败${NC}"
+         read -p "按 Enter 继续..." -r
+         return 1;
+  fi
+
+
+    echo -e "${GREEN}Cookie 添加成功!${NC}"
+    read -p "按 Enter 继续..." -r
+}
+
+clewd_menu() {
+    while true; do
+        clear
+        echo -e "\n${GREEN}[Clewd管理]${NC}"
+        echo -e "1. 启动程序"
+        echo -e "2. 安装环境 (首次需运行)"
+        echo -e "3. 更新程序"
+        echo -e "4. 添加 Cookie"
+        echo -e "5. 返回主菜单"
+
+        read -p "请选择: " choice
+        case $choice in
+            1) start_clewd ;;
+            2) install_clewd_env ;;
+            3) update_clewd ;;
+            4) add_cookie ;;
+            5) return ;;
+            *) echo -e "${RED}无效的选择${NC}" ;;
+        esac
+    done
+}
 
 show_menu_info() {
     if need_update; then
@@ -308,11 +461,12 @@ main_menu() {
         clear
         show_menu_info
 
-        echo -e "\n1. 启动程序"
+        echo -e "\n1. 启动SillyTavern"
         echo -e "2. 数据管理"
         echo -e "3. 版本管理"
         echo -e "4. 杂项工具"
-        echo -e "5. 退出"
+        echo -e "5. Clewd管理" # Added Clewd menu entry
+        echo -e "6. 退出"
 
         read -p "请选择: " choice
         case $choice in
@@ -320,7 +474,8 @@ main_menu() {
             2) data_management_menu ;;
             3) version_management_menu ;;
             4) miscellaneous_tools_menu ;;
-            5) exit 0 ;;
+            5) clewd_menu ;; # call clewd menu
+            6) exit 0 ;;
             *) echo -e "${RED}无效的选择${NC}" ;;
         esac
     done
